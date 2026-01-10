@@ -10462,7 +10462,7 @@
     },
     {
       "name": "Grimstone\u003cbr\u003eDungeon",
-      "worldX": 2911,
+      "worldX": 2890,
       "worldY": 10467,
       "plane": 0,
       "textColor": 16777215,
@@ -10472,51 +10472,6 @@
     }
   ],
   "icons": [
-    {
-      "name": "Icon 1535",
-      "worldX": 2239,
-      "worldY": 3270,
-      "plane": 0,
-      "spriteId": 1535,
-      "category": 1063,
-      "membersOnly": false
-    },
-    {
-      "name": "Icon 1535",
-      "worldX": 2239,
-      "worldY": 3384,
-      "plane": 0,
-      "spriteId": 1535,
-      "category": 1063,
-      "membersOnly": false
-    },
-    {
-      "name": "Icon 1535",
-      "worldX": 2297,
-      "worldY": 3327,
-      "plane": 0,
-      "spriteId": 1535,
-      "category": 1063,
-      "membersOnly": false
-    },
-    {
-      "name": "Icon 1535",
-      "worldX": 2183,
-      "worldY": 3327,
-      "plane": 0,
-      "spriteId": 1535,
-      "category": 1063,
-      "membersOnly": false
-    },
-    {
-      "name": "Icon 1535",
-      "worldX": 3681,
-      "worldY": 3537,
-      "plane": 0,
-      "spriteId": 1535,
-      "category": 1063,
-      "membersOnly": false
-    },
     {
       "name": "Icon 1535",
       "worldX": 1696,
@@ -10548,6 +10503,51 @@
       "name": "Icon 1535",
       "worldX": 3203,
       "worldY": 3169,
+      "plane": 0,
+      "spriteId": 1535,
+      "category": 1063,
+      "membersOnly": false
+    },
+    {
+      "name": "Icon 1535",
+      "worldX": 3681,
+      "worldY": 3537,
+      "plane": 0,
+      "spriteId": 1535,
+      "category": 1063,
+      "membersOnly": false
+    },
+    {
+      "name": "Icon 1535",
+      "worldX": 2239,
+      "worldY": 3270,
+      "plane": 0,
+      "spriteId": 1535,
+      "category": 1063,
+      "membersOnly": false
+    },
+    {
+      "name": "Icon 1535",
+      "worldX": 2239,
+      "worldY": 3384,
+      "plane": 0,
+      "spriteId": 1535,
+      "category": 1063,
+      "membersOnly": false
+    },
+    {
+      "name": "Icon 1535",
+      "worldX": 2297,
+      "worldY": 3327,
+      "plane": 0,
+      "spriteId": 1535,
+      "category": 1063,
+      "membersOnly": false
+    },
+    {
+      "name": "Icon 1535",
+      "worldX": 2183,
+      "worldY": 3327,
       "plane": 0,
       "spriteId": 1535,
       "category": 1063,
@@ -21365,7 +21365,7 @@
     "totalElements": 1259,
     "elementsWithLabels": 1047,
     "elementsWithIcons": 212,
-    "totalAreas": 1252,
+    "totalAreas": 1254,
     "intermapLinkCount": 400,
     "categories": {
       "-1": "Unknown",
