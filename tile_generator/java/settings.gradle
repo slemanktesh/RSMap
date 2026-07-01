@@ -1,0 +1,11 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        maven {
+            url = 'https://repo.runelite.net'
+        }
+    }
+}
+
+rootProject.name = 'rsmap-tile-generator'

@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.gradleup.shadow' version '8.3.9'
 }
 
 group = 'org.explv'
@@ -26,6 +26,53 @@ dependencies {
 
 application {
     mainClass = 'org.explv.mapimage.Main'
+}
+
+def tileGeneratorRunProperties = ['cachedir', 'xteapath', 'outputdir']
+
+tasks.register('validateTileGeneratorRunArgs') {
+    group = 'application'
+    description = 'Checks required Java tile-generator run arguments.'
+
+    doLast {
+        def missingProperties = tileGeneratorRunProperties.findAll { !project.hasProperty(it) || !project.property(it).toString().trim() }
+
+        if (!missingProperties.isEmpty()) {
+            throw new GradleException("""
+You are running the Java tile-generator task, not the RSMap web viewer.
+
+To run the web map from the repository root:
+  .\\gradlew.bat run
+
+In IntelliJ, run the shared configuration:
+  RSMap Web App
+
+Only run this Java task when generating map images. It requires:
+  .\\..\\..\\gradlew.bat run -Pcachedir=<cache-dir> -Pxteapath=<xteas.json> -Poutputdir=<output-dir>
+
+Missing tile-generator properties: ${missingProperties.join(', ')}
+""".stripIndent().trim())
+        }
+    }
+}
+
+tasks.named('classes') {
+    mustRunAfter 'validateTileGeneratorRunArgs'
+}
+
+tasks.named('run', JavaExec) {
+    description = 'Runs the Java tile generator. Requires -Pcachedir, -Pxteapath, and -Poutputdir.'
+    dependsOn 'validateTileGeneratorRunArgs'
+
+    doFirst {
+        if (args != null && !args.isEmpty()) {
+            return
+        }
+
+        args '--cachedir', project.property('cachedir').toString(),
+            '--xteapath', project.property('xteapath').toString(),
+            '--outputdir', project.property('outputdir').toString()
+    }
 }
 
 shadowJar {

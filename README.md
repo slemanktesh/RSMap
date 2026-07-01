@@ -37,6 +37,38 @@ npm run dev
 
 3. **Open in browser**: [http://localhost:3000](http://localhost:3000)
 
+### Easy IntelliJ / Gradle Run
+
+From the project root on Windows:
+
+```powershell
+.\gradlew.bat run
+```
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+Useful Gradle tasks:
+
+```powershell
+.\gradlew.bat run
+.\gradlew.bat dev
+.\gradlew.bat verify
+.\gradlew.bat lintNext
+.\gradlew.bat typecheck
+.\gradlew.bat testRegionTools
+.\gradlew.bat nextBuild
+```
+
+In IntelliJ, refresh the root Gradle project and run the shared `RSMap Web App` run configuration, or run `Tasks > application > run`.
+
+If you see `Missing required options: cachedir, xteapath, outputdir`, IntelliJ is running the Java tile-generator project instead of the web map. Switch to the root `RSMap Web App` configuration. The Java tile-generator `run` task is only for generating map images and requires explicit cache/XTEA/output arguments.
+
+Suggested commit name:
+
+```text
+feat: add cache and region tools
+```
+
 ### 🚀 Deploy to Vercel
 
 The easiest way to deploy is using Vercel:
@@ -119,6 +151,13 @@ The map supports standard interactions:
 - **Zoom**: Mouse wheel or zoom controls
 - **Pan**: Click and drag
 - **Click**: Click anywhere to see coordinates
+- **Labels**: Use `Labels On/Off` in the bottom bar to toggle world map labels
+- **Region Grid**: Use `Grid On/Off` to toggle exact 64x64 region boundaries
+- **Region Labels**: Use `Region Labels` and the dropdown to show `50_49`, `12849`, or both
+- **Go Region**: Enter `50_49`, `12849`, `m50_49`, or `l50_49` and click `Go Region`
+- **Z Planes**: Use `Plane` or the HUD `Z +` / `Z -` buttons to inspect planes 0-3
+- **Plane Mode**: Use `Stacked 0-Z` to blend lower planes, or `Only Z` to show only the selected plane
+- **Hover Coordinates**: Move the mouse over the map to see live world `X`, `Y`, `Z`, region, and local tile coordinates
 
 ### Coordinate Information
 

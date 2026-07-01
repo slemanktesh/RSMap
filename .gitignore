@@ -52,6 +52,7 @@ generate_tiles_only.py
 # Note: This makes the repo large (~2GB) but ensures full map functionality
 
 # Java build artifacts
+/.gradle/
 /tile_generator/java/build/
 /tile_generator/java/.gradle/
 

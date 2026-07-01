@@ -2,11 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { LeafletCoords } from '@/lib/coordinates';
+import { LeafletCoords, osrsWorldToLeaflet } from '@/lib/coordinates';
+import { buildRegionInfoFromWorld, parseSmartSearch } from '@/lib/regionTools';
 import IronRivetPanel from '@/components/IronRivetPanel';
 import OSRSButton from '@/components/OSRSButton';
 import AddIconDialog from '@/components/AddIconDialog';
 import EditIconDialog from '@/components/EditIconDialog';
+import CacheRegionToolsPanel from '@/components/CacheRegionToolsPanel';
+import { RegionLabelFormat } from '@/components/RegionOverlay';
+import type { MapHoverInfo, PlaneDisplayMode } from '@/components/OSRSMap';
 import { MapIcon } from '@/types/mapIcon';
 import { MapIconService } from '@/lib/mapIconService';
 import { loadWorldMapAsIcons, mergeWithUserIcons } from '@/lib/convertWorldMapToIcons';
@@ -32,6 +36,14 @@ export default function Home() {
   const [movingIcon, setMovingIcon] = useState<MapIcon | null>(null);
   const [editingIcon, setEditingIcon] = useState<MapIcon | null>(null);
   const [pendingDungeonLink, setPendingDungeonLink] = useState<MapIcon | null>(null);
+  const [showRegionTools, setShowRegionTools] = useState(false);
+  const [showWorldMapLabels, setShowWorldMapLabels] = useState(true);
+  const [showRegionGrid, setShowRegionGrid] = useState(false);
+  const [showRegionLabels, setShowRegionLabels] = useState(false);
+  const [regionLabelFormat, setRegionLabelFormat] = useState<RegionLabelFormat>('name-id');
+  const [goRegionInput, setGoRegionInput] = useState('50_49');
+  const [planeDisplayMode, setPlaneDisplayMode] = useState<PlaneDisplayMode>('stacked');
+  const [hoverInfo, setHoverInfo] = useState<MapHoverInfo | null>(null);
   const mapRef = useRef<any>(null);
 
   // Load icons on mount - merge user icons with worldmap icons
@@ -70,6 +82,10 @@ export default function Home() {
 
   const handleCoordinateClick = (coords: LeafletCoords) => {
     setClickedCoords(coords);
+    const isPlacementMode = Boolean(pendingDungeonLink || movingIcon || copyingIcon || addIconMode);
+    if (!isPlacementMode) {
+      setShowRegionTools(true);
+    }
     
     // If placing linked icon (dungeon exit or map link pair)
     if (pendingDungeonLink) {
@@ -218,6 +234,30 @@ export default function Home() {
     }
   };
 
+  const handleJumpToWorld = (worldX: number, worldY: number, plane: number) => {
+    if (plane !== currentPlane) {
+      setCurrentPlane(Math.max(0, Math.min(3, plane)));
+    }
+
+    if (mapRef.current) {
+      const target = osrsWorldToLeaflet(worldX, worldY, plane);
+      mapRef.current.setView([target.lat, target.lng], mapRef.current.getZoom());
+    }
+  };
+
+  const handleGoToRegion = () => {
+    const result = parseSmartSearch(goRegionInput, currentPlane);
+
+    if (!result) {
+      alert('Enter a region like 50_49, 12849, m50_49, or l50_49.');
+      return;
+    }
+
+    handleJumpToWorld(result.jumpWorldX, result.jumpWorldY, result.plane);
+    setShowRegionGrid(true);
+    setShowRegionLabels(true);
+  };
+
   const handleExportIcons = () => {
     const jsonString = MapIconService.exportToJSON();
     const blob = new Blob([jsonString], { type: 'application/json' });
@@ -261,6 +301,7 @@ export default function Home() {
         <div className="flex-1 relative">
           <OSRSMap 
             onCoordinateClick={handleCoordinateClick} 
+            onMouseCoordinateChange={setHoverInfo}
             plane={currentPlane}
             onPlaneChange={setCurrentPlane}
             onMapReady={(map) => { mapRef.current = map; }}
@@ -271,14 +312,32 @@ export default function Home() {
             onIconEdit={handleEditIcon}
             onIconClick={handleIconClick}
             addIconMode={addIconMode}
+            showWorldMapLabels={showWorldMapLabels}
+            showRegionGrid={showRegionGrid}
+            showRegionLabels={showRegionLabels}
+            regionLabelFormat={regionLabelFormat}
+            planeDisplayMode={planeDisplayMode}
           />
+          <CoordinateHud
+            hoverInfo={hoverInfo}
+            currentPlane={currentPlane}
+            onPlaneChange={setCurrentPlane}
+          />
+          {showRegionTools && (
+            <CacheRegionToolsPanel
+              currentPlane={currentPlane}
+              clickedCoords={clickedCoords}
+              onClose={() => setShowRegionTools(false)}
+              onJumpToWorld={handleJumpToWorld}
+            />
+          )}
         </div>
       </div>
       <IronRivetPanel className="min-h-8 w-full" style={{ padding: '8px 12px' }}>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm text-white font-semibold">OSRS World Map</div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Plane Controls */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-300">Plane:</span>
@@ -301,6 +360,20 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Plane Display Mode */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-gray-300">Mode:</span>
+              <select
+                value={planeDisplayMode}
+                onChange={(event) => setPlaneDisplayMode(event.target.value as PlaneDisplayMode)}
+                className="h-[28px] rounded border border-gray-600 bg-gray-900 px-1 text-xs text-white"
+                title="Choose whether to stack lower planes or show only selected Z"
+              >
+                <option value="stacked">Stacked 0-Z</option>
+                <option value="single">Only Z</option>
+              </select>
+            </div>
+
             {/* Zoom Controls */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-300">Zoom:</span>
@@ -319,6 +392,69 @@ export default function Home() {
                 </OSRSButton>
               </div>
             </div>
+
+            {/* Label and Region Overlay Controls */}
+            <div className="flex items-center gap-1 border-l border-gray-600 pl-4">
+              <OSRSButton
+                onClick={() => setShowWorldMapLabels(!showWorldMapLabels)}
+                className={`!min-h-[28px] ${showWorldMapLabels ? '!bg-green-700' : ''}`}
+                title="Toggle world map labels"
+              >
+                Labels {showWorldMapLabels ? 'On' : 'Off'}
+              </OSRSButton>
+              <OSRSButton
+                onClick={() => setShowRegionGrid(!showRegionGrid)}
+                className={`!min-h-[28px] ${showRegionGrid ? '!bg-green-700' : ''}`}
+                title="Toggle 64x64 region grid"
+              >
+                Grid {showRegionGrid ? 'On' : 'Off'}
+              </OSRSButton>
+              <OSRSButton
+                onClick={() => setShowRegionLabels(!showRegionLabels)}
+                className={`!min-h-[28px] ${showRegionLabels ? '!bg-green-700' : ''}`}
+                title="Toggle region labels"
+              >
+                Region Labels
+              </OSRSButton>
+              <select
+                value={regionLabelFormat}
+                onChange={(event) => setRegionLabelFormat(event.target.value as RegionLabelFormat)}
+                className="h-[28px] rounded border border-gray-600 bg-gray-900 px-1 text-xs text-white"
+                title="Region label format"
+              >
+                <option value="name">50_49</option>
+                <option value="id">12849</option>
+                <option value="name-id">50_49 + 12849</option>
+              </select>
+            </div>
+
+            {/* Go To Region */}
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={goRegionInput}
+                onChange={(event) => setGoRegionInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    handleGoToRegion();
+                  }
+                }}
+                className="h-[28px] w-24 rounded border border-gray-600 bg-gray-900 px-2 text-xs text-white focus:border-yellow-500 focus:outline-none"
+                placeholder="50_49"
+                title="Go to region ID/name/archive"
+              />
+              <OSRSButton onClick={handleGoToRegion} className="!min-h-[28px]">
+                Go Region
+              </OSRSButton>
+            </div>
+
+            {/* Region Tools */}
+            <OSRSButton
+              onClick={() => setShowRegionTools(!showRegionTools)}
+              className={showRegionTools ? '!bg-yellow-700' : ''}
+            >
+              Region Tools
+            </OSRSButton>
 
             {/* Add Icon Button */}
             <OSRSButton 
@@ -382,5 +518,63 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+function CoordinateHud({ hoverInfo, currentPlane, onPlaneChange }: {
+  hoverInfo: MapHoverInfo | null;
+  currentPlane: number;
+  onPlaneChange: (plane: number) => void;
+}) {
+  const regionInfo = hoverInfo
+    ? buildRegionInfoFromWorld(hoverInfo.worldX, hoverInfo.worldY, hoverInfo.plane)
+    : null;
+
+  return (
+    <div className="pointer-events-auto absolute left-3 top-3 z-[900] w-[260px] rounded border border-white/80 bg-black/85 text-white shadow-lg">
+      <div className="border-b border-white/60 px-3 py-2 text-2xl">
+        <span className="text-sky-400">RSMap</span>
+        <span className="text-gray-200"> Coordinates</span>
+      </div>
+
+      <div className="grid grid-cols-3 border-b border-white/50 text-center text-lg">
+        <HudCell label="X" value={hoverInfo ? String(hoverInfo.worldX) : '--'} />
+        <HudCell label="Y" value={hoverInfo ? String(hoverInfo.worldY) : '--'} />
+        <HudCell label="Z" value={String(currentPlane)} />
+      </div>
+
+      <div className="grid grid-cols-2 border-b border-white/50 text-center text-sm">
+        <HudCell label="Region" value={regionInfo ? `${regionInfo.regionName} / ${regionInfo.regionId}` : '--'} />
+        <HudCell label="Local" value={regionInfo ? `${regionInfo.localX}, ${regionInfo.localY}` : '--'} />
+      </div>
+
+      <div className="grid grid-cols-2">
+        <button
+          type="button"
+          onClick={() => onPlaneChange(Math.min(3, currentPlane + 1))}
+          disabled={currentPlane >= 3}
+          className="border-r border-white/50 px-3 py-2 text-lg hover:bg-white/10 disabled:text-gray-600 disabled:hover:bg-transparent"
+        >
+          Z +
+        </button>
+        <button
+          type="button"
+          onClick={() => onPlaneChange(Math.max(0, currentPlane - 1))}
+          disabled={currentPlane <= 0}
+          className="px-3 py-2 text-lg hover:bg-white/10 disabled:text-gray-600 disabled:hover:bg-transparent"
+        >
+          Z -
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HudCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 border-r border-white/50 px-2 py-2 last:border-r-0">
+      <div className="text-[10px] uppercase tracking-wide text-gray-400">{label}</div>
+      <div className="truncate font-bold">{value}</div>
+    </div>
   );
 }
